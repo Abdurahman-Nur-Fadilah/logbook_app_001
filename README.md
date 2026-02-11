@@ -2,15 +2,6 @@
 
 A new Flutter project.
 
-## Getting Started
+## Self Reflection
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Prinsip SRP sangat membantu dalam kemudahan saya dalam membuat program counter ini, soalnya dengan prinsip SRP logika bisnis dan tampilan ada di file yang terpisah jadi lebih mudah ketika hanya ingin mengubah logikanya saja atau hanya mengubah tampilannya saja. Prinsip SRP ini juga membantu dalam pengerjaan saya ketika ingin mengubah warna dari history dari counter, dimana jika logika pewarnaan terdapat pada view maka akan membuat codenya sangat panjang.

@@ -13,7 +13,7 @@ class _CounterViewState extends State<CounterView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("LogBook: Versi SRP")),
+      appBar: AppBar(title: const Text("LogBook1 - Counter dengan SRP")),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -68,9 +68,30 @@ class _CounterViewState extends State<CounterView> {
             onPressed: () => setState(() => _controller.decrement()),
             child: const Icon(Icons.remove),
           ),
-          FloatingActionButton(onPressed: () => setState(() => _controller.reset()),
+            FloatingActionButton(onPressed: () async {
+              bool? confirmReset = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Konfirmasi Reset'),
+                  content: const Text('Apakah Anda yakin ingin mereset counter?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Batal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text('Ya'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmReset == true) {
+                setState(() => _controller.reset());
+              }
+            },
             child: const Icon(Icons.refresh),
-          ),
+            ),
         ],
       ),
     );
