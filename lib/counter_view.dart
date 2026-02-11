@@ -68,30 +68,18 @@ class _CounterViewState extends State<CounterView> {
             onPressed: () => setState(() => _controller.decrement()),
             child: const Icon(Icons.remove),
           ),
-            FloatingActionButton(onPressed: () async {
-              bool? confirmReset = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Konfirmasi Reset'),
-                  content: const Text('Apakah Anda yakin ingin mereset counter?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Batal'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text('Ya'),
-                    ),
-                  ],
+            FloatingActionButton(onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Tekan Reset untuk mengatur ulang counter!'),
+                action: SnackBarAction(label: 'Reset', onPressed: () {
+                  setState(() => _controller.reset());
+                }),
+                duration: Duration(seconds: 3),
                 ),
               );
-              if (confirmReset == true) {
-                setState(() => _controller.reset());
-              }
             },
             child: const Icon(Icons.refresh),
-            ),
+          ),
         ],
       ),
     );
