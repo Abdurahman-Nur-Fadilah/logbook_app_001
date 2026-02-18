@@ -17,10 +17,20 @@ class CounterView extends StatefulWidget {
       super.initState();
       _controller = CounterController(username: widget.username);
       _loadCounter();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_controller.getGreeting()}, ${widget.username}!'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      });
     }
   
   Future<void> _loadCounter() async {
     await _controller.loadLastValue();
+    await _controller.loadLog();
     setState(() {});
   }
 
