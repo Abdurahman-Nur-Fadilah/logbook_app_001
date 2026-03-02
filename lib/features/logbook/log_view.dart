@@ -15,14 +15,17 @@ class LogView extends StatefulWidget {
 
     final TextEditingController _titleController = TextEditingController();
     final TextEditingController _contentController = TextEditingController();
+    final TextEditingController _searchController = TextEditingController();
+    final TextEditingController _categoryController = TextEditingController();
 
     void _showAddLogDialog() {
+      _categoryController.text = LogController.categories[0]; 
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Tambah Catatan Baru"),
           content: Column(
-            mainAxisSize: MainAxisSize.min, // Agar dialog tidak memenuhi layar
+            mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: _titleController,
@@ -32,27 +35,41 @@ class LogView extends StatefulWidget {
                 controller: _contentController,
                 decoration: const InputDecoration(hintText: "Isi Deskripsi"),
               ),
+              DropdownButtonFormField<String>(
+                initialValue: _categoryController.text,
+                items: LogController.categories.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _categoryController.text = newValue!;
+                  });
+                },
+                decoration: const InputDecoration(labelText: 'Kategori'),
+              ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context), // Tutup tanpa simpan
+              onPressed: () => Navigator.pop(context),
               child: const Text("Batal"),
             ),
             ElevatedButton(
               onPressed: () {
-                // Jalankan fungsi tambah di Controller
                 _controller.addLog(
                   _titleController.text, 
-                  _contentController.text
+                  _contentController.text,
+                  _categoryController.text
                 );
                 
-                // Trigger UI Refresh
                 setState(() {}); 
                 
-                // Bersihkan input dan tutup dialog
                 _titleController.clear();
                 _contentController.clear();
+                _categoryController.clear();
                 Navigator.pop(context);
               },
               child: const Text("Simpan"),
@@ -62,9 +79,10 @@ class LogView extends StatefulWidget {
       );
     }
 
-    void _showEditLogDialog(int index, LogModel log) {
+    void _showEditLogDialog(LogModel log) {
       _titleController.text = log.title;
       _contentController.text = log.description;
+      _categoryController.text = log.category;
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -74,15 +92,31 @@ class LogView extends StatefulWidget {
             children: [
               TextField(controller: _titleController),
               TextField(controller: _contentController),
+              DropdownButtonFormField<String>(
+                initialValue: _categoryController.text,
+                items: LogController.categories.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _categoryController.text = newValue!;
+                  });
+                },
+                decoration: const InputDecoration(labelText: 'Kategori'),
+              ),
             ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
             ElevatedButton(
               onPressed: () {
-                _controller.updateLog(index, _titleController.text, _contentController.text);
+                _controller.updateLog(log, _titleController.text, _contentController.text, _categoryController.text);
                 _titleController.clear();
                 _contentController.clear();
+                _categoryController.clear();
                 Navigator.pop(context);
               },
               child: const Text("Update"),
@@ -119,18 +153,14 @@ class LogView extends StatefulWidget {
                     title: const Text("Konfirmasi Logout"),
                     content: const Text("Apakah Anda yakin? Data yang belum disimpan mungkin akan hilang."),
                     actions: [
-                      // Tombol Batal
                       TextButton(
-                        onPressed: () => Navigator.pop(context), // Menutup dialog saja
+                        onPressed: () => Navigator.pop(context),
                         child: const Text("Batal"),
                       ),
-                      // Tombol Ya, Logout
                       TextButton(
                         onPressed: () {
-                          // Menutup dialog
                           Navigator.pop(context); 
                           
-                          // 2. Navigasi kembali ke Onboarding (Membersihkan Stack)
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(builder: (context) => const OnboardingView()),
@@ -147,36 +177,74 @@ class LogView extends StatefulWidget {
           ),
         ],
       ),
-      body: ValueListenableBuilder<List<LogModel>>(
-        valueListenable: _controller.logsNotifier,
-        builder: (context, currentLogs, child) {
-          if (currentLogs.isEmpty) return const Center(child: Text("Belum ada catatan."));
-          return ListView.builder(
-            itemCount: currentLogs.length,
-            itemBuilder: (context, index) {
-              final log = currentLogs[index];
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.note),
-                  title: Text(log.title),
-                  subtitle: Text(log.description),
-                  trailing: Wrap(
-                    children: [
-                      IconButton(icon: const Icon(Icons.edit, color: Colors.blue), 
-                        onPressed: () => _showEditLogDialog(index, log)),
-                      IconButton(icon: const Icon(Icons.delete, color: Colors.red), 
-                        onPressed: () => _controller.removeLog(index)),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: "Cari catatan...",
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                _controller.setSearchQuery(value);
+              },
+            ),
+          ),
+          Expanded(
+            child: ValueListenableBuilder<List<LogModel>>(
+              valueListenable: _controller.filteredLogsNotifier,
+              builder: (context, currentLogs, child) {
+                if (currentLogs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/images/didntfound.png', width: 200, height: 200),
+                        const SizedBox(height: 16),
+                        Text(
+                          _controller.isSearchActive
+                            ? "Tidak ditemukan log yang cocok dengan pencarian."
+                            : "Tidak ada apa apa disini, tambahkan log baru",
+                          style: const TextStyle(fontSize: 16, color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: currentLogs.length,
+                  itemBuilder: (context, index) {
+                    final log = currentLogs[index];
+                    return Card(
+                      color: _controller.getColorForCategory(log.category),
+                      child: ListTile(
+                        leading: const Icon(Icons.note),
+                        title: Text(log.title),
+                        subtitle: Text('${log.category}: ${log.description}'),
+                        trailing: Wrap(
+                          children: [
+                            IconButton(icon: const Icon(Icons.edit, color: Colors.blue), 
+                              onPressed: () => _showEditLogDialog(log)),
+                            IconButton(icon: const Icon(Icons.delete, color: Colors.red), 
+                              onPressed: () => _controller.removeLog(log)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
 
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddLogDialog, // Panggil fungsi dialog yang baru dibuat
+        onPressed: _showAddLogDialog,
         child: const Icon(Icons.add),
       ),
 
