@@ -2,8 +2,13 @@
 import 'package:flutter/material.dart';
 // Sesuaikan path import dengan struktur folder baru
 import 'package:logbook_app_001/features/onboarding/onboarding_view.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Load ENV
+  await dotenv.load(fileName: ".env");
+
   runApp(const MyApp());
 }
 
