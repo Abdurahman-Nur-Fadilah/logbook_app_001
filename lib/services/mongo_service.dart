@@ -44,13 +44,15 @@ class MongoService {
     }
   }
 
-  /// READ: Mengambil semua data dari Cloud
-  Future<List<LogModel>> getLogs() async {
+  /// READ: Ambil semua log dari teamId yang sama
+  Future<List<LogModel>> getLogs(String teamId) async {
     _isLoading = true;
     try {
       final collection = await _getSafeCollection();
-      await LogHelper.writeLog('INFO: Fetching all logs from Cloud...', source: _source, level: 3);
-      final List<Map<String, dynamic>> data = await collection.find().toList();
+      await LogHelper.writeLog('INFO: Fetching logs for Team: $teamId', source: _source, level: 3);
+      final List<Map<String, dynamic>> data = await collection
+          .find(where.eq('teamId', teamId))
+          .toList();
       return data.map((json) => LogModel.fromMap(json)).toList();
     } catch (e) {
       await LogHelper.writeLog('ERROR: Fetch Failed - $e', source: _source, level: 1);
@@ -65,7 +67,7 @@ class MongoService {
     try {
       final collection = await _getSafeCollection();
       await collection.insertOne(log.toMap());
-      await LogHelper.writeLog("SUCCESS: Data '${log.title}' Saved to Cloud", source: _source, level: 2);
+      await LogHelper.writeLog("SUCCESS: Data '\${log.title}' Saved to Cloud", source: _source, level: 2);
     } catch (e) {
       await LogHelper.writeLog('ERROR: Insert Failed - $e', source: _source, level: 1);
       rethrow;
@@ -83,7 +85,7 @@ class MongoService {
         where.eq('_id', ObjectId.fromHexString(log.id!)),
         log.toMap(),
       );
-      await LogHelper.writeLog("DATABASE: Update '${log.title}' Berhasil", source: _source, level: 2);
+      await LogHelper.writeLog("DATABASE: Update '\${log.title}' Berhasil", source: _source, level: 2);
     } catch (e) {
       await LogHelper.writeLog('DATABASE: Update Gagal - $e', source: _source, level: 1);
       rethrow;

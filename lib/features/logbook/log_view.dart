@@ -5,6 +5,7 @@ import 'package:logbook_app_001/features/logbook/log_controller.dart';
 import 'package:logbook_app_001/features/logbook/models/log_model.dart';
 import 'package:logbook_app_001/features/logbook/log_editor_page.dart';
 import 'package:logbook_app_001/features/onboarding/onboarding_view.dart';
+import 'package:logbook_app_001/features/auth/login_controller.dart';
 
 class LogView extends StatefulWidget {
   final Map<String, String> currentUser;
@@ -49,12 +50,12 @@ class _LogViewState extends State<LogView> {
         onTimeout: () => throw Exception('Koneksi Cloud Timeout. Periksa sinyal/IP Whitelist.'),
       );
       await LogHelper.writeLog('UI: Koneksi MongoService BERHASIL.', source: 'log_view.dart');
-      await _controller.loadLogs();
+      await _controller.loadLogs(widget.currentUser['teamId']!);
     } catch (e) {
       await LogHelper.writeLog('UI: Error - $e', source: 'log_view.dart', level: 1);
       if (mounted) {
         setState(() => _isOffline = true);
-        await _controller.loadLogs();
+        await _controller.loadLogs(widget.currentUser['teamId']!);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('Tidak dapat terhubung ke Cloud. Mode Offline.'),
           backgroundColor: Colors.orange,
@@ -70,19 +71,31 @@ class _LogViewState extends State<LogView> {
     }
   }
 
+  Future<void> _logout() async {
+    await LoginController().clearSession();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const OnboardingView()),
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = widget.currentUser['uid'] ?? '';
+    final teamId = widget.currentUser['teamId'] ?? '';
     final username = widget.currentUser['username'] ?? '';
+    final role = widget.currentUser['role'] ?? 'Anggota';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('LogBook - $username'),
+        title: Text('LogBook - $username [$role]'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _controller.loadLogs(),
+            onPressed: () => _controller.loadLogs(teamId),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -94,11 +107,7 @@ class _LogViewState extends State<LogView> {
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      Navigator.pushAndRemoveUntil(context,
-                        MaterialPageRoute(builder: (_) => const OnboardingView()), (_) => false);
-                    },
+                    onPressed: () { Navigator.pop(ctx); _logout(); },
                     child: const Text('Ya, Keluar', style: TextStyle(color: Colors.red)),
                   ),
                 ],
@@ -144,12 +153,11 @@ class _LogViewState extends State<LogView> {
                 : ValueListenableBuilder<List<LogModel>>(
                     valueListenable: _controller.logsNotifier,
                     builder: (context, allLogs, _) {
-                      // Filter visibilitas: tampilkan log milik sendiri ATAU yang public
                       final visibleLogs = allLogs.where((log) =>
-                        log.authorId == uid || log.isPublic
+                        log.authorId == uid ||
+                        (log.isPublic && log.teamId == teamId)
                       ).toList();
 
-                      // Filter search
                       final q = _searchController.text.toLowerCase();
                       final currentLogs = q.isEmpty
                           ? visibleLogs
@@ -162,9 +170,7 @@ class _LogViewState extends State<LogView> {
                           const Icon(Icons.note_alt_outlined, size: 64, color: Colors.grey),
                           const SizedBox(height: 16),
                           Text(
-                            q.isNotEmpty
-                                ? 'Tidak ditemukan log yang cocok.'
-                                : 'Belum ada catatan.',
+                            q.isNotEmpty ? 'Tidak ditemukan log yang cocok.' : 'Belum ada catatan.',
                             style: const TextStyle(fontSize: 16, color: Colors.grey),
                             textAlign: TextAlign.center,
                           ),
@@ -177,7 +183,7 @@ class _LogViewState extends State<LogView> {
                       }
 
                       return RefreshIndicator(
-                        onRefresh: () => _controller.loadLogs(),
+                        onRefresh: () => _controller.loadLogs(teamId),
                         child: ListView.builder(
                           itemCount: currentLogs.length,
                           itemBuilder: (context, index) {

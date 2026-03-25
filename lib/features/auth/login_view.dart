@@ -39,13 +39,17 @@ class _LoginViewState extends State<LoginView> {
     });
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final user = _controller.login(
       _userController.text,
       _passController.text,
     );
 
     if (user != null) {
+      // Simpan session ke SharedPreferences
+      await _controller.saveSession(user);
+
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -57,7 +61,7 @@ class _LoginViewState extends State<LoginView> {
         _startLockout();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Terlalu banyak percobaan gagal. Coba lagi dalam 10 detik."),
+            content: Text('Terlalu banyak percobaan gagal. Coba lagi dalam 10 detik.'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
@@ -65,7 +69,7 @@ class _LoginViewState extends State<LoginView> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Login gagal! Percobaan ${_controller.failedAttempts}/3"),
+            content: Text('Login gagal! Percobaan \${_controller.failedAttempts}/3'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -84,20 +88,20 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login Gatekeeper")),
+      appBar: AppBar(title: const Text('Login Gatekeeper')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _userController,
-              decoration: const InputDecoration(labelText: "Username"),
+              decoration: const InputDecoration(labelText: 'Username'),
             ),
             TextField(
               controller: _passController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
-                labelText: "Password",
+                labelText: 'Password',
                 suffixIcon: IconButton(
                   icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -107,7 +111,7 @@ class _LoginViewState extends State<LoginView> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _isLockedOut ? null : _handleLogin,
-              child: Text(_isLockedOut ? "Locked Out (${remainingSeconds}s)" : "Masuk"),
+              child: Text(_isLockedOut ? 'Locked Out (\${remainingSeconds}s)' : 'Masuk'),
             ),
           ],
         ),

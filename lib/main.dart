@@ -1,7 +1,9 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:logbook_app_001/features/onboarding/onboarding_view.dart';
+import 'package:logbook_app_001/features/logbook/log_view.dart';
 import 'package:logbook_app_001/features/logbook/models/log_model.dart';
+import 'package:logbook_app_001/features/auth/login_controller.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -9,16 +11,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
+  // Inisialisasi Hive
   await Hive.initFlutter();
   Hive.registerAdapter(LogModelAdapter());
-  await Hive.deleteBoxFromDisk('offline_logs');
   await Hive.openBox<LogModel>('offline_logs');
 
-  runApp(const MyApp());
+  // Cek session tersimpan
+  final session = await LoginController().loadSession();
+
+  runApp(MyApp(savedSession: session));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Map<String, String>? savedSession;
+  const MyApp({super.key, this.savedSession});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +34,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
-      home: const OnboardingView(),
+      // Kalau ada session tersimpan langsung ke LogView, kalau tidak ke Onboarding
+      home: savedSession != null
+          ? LogView(currentUser: savedSession!)
+          : const OnboardingView(),
     );
   }
 }

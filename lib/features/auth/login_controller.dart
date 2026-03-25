@@ -1,6 +1,10 @@
 // login_controller.dart
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class LoginController {
-  // Data user lengkap dengan uid, role, dan teamId
+  static const String _sessionKey = 'user_session';
+
   static const List<Map<String, String>> _users = [
     {
       'username': 'admin',
@@ -23,6 +27,13 @@ class LoginController {
       'role': 'Anggota',
       'teamId': 'MEKTRA_KLP_01',
     },
+    {
+      'username': 'teamb',
+      'password': '123',
+      'uid': 'uid_004',
+      'role': 'Anggota',
+      'teamId': 'MEKTRA_KLP_02',
+    },
   ];
 
   int _failedAttempts = 0;
@@ -41,6 +52,26 @@ class LoginController {
       _failedAttempts++;
       return null;
     }
+  }
+
+  /// Simpan session user ke SharedPreferences
+  Future<void> saveSession(Map<String, String> user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sessionKey, jsonEncode(user));
+  }
+
+  /// Load session user dari SharedPreferences
+  Future<Map<String, String>?> loadSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_sessionKey);
+    if (data == null) return null;
+    return Map<String, String>.from(jsonDecode(data));
+  }
+
+  /// Hapus session (logout)
+  Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionKey);
   }
 
   void resetFailedAttempts() => _failedAttempts = 0;
