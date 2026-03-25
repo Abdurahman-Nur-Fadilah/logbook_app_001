@@ -1,51 +1,86 @@
-import 'package:mongo_dart/mongo_dart.dart';
+import 'package:hive/hive.dart';
+import 'package:mongo_dart/mongo_dart.dart' show ObjectId;
 
+part 'log_model.g.dart';
+
+@HiveType(typeId: 0)
 class LogModel {
-  final ObjectId? id;
+  @HiveField(0)
+  final String? id;
+
+  @HiveField(1)
   final String title;
-  final String date;
+
+  @HiveField(2)
   final String description;
+
+  @HiveField(3)
+  final String date;
+
+  @HiveField(4)
+  final String authorId;
+
+  @HiveField(5)
+  final String teamId;
+
+  @HiveField(6)
   final String category;
+
+  @HiveField(7)
+  final bool isPublic;
+
+  @HiveField(8)
+  final bool isSynced; // false = belum tersync ke Atlas
 
   LogModel({
     this.id,
     required this.title,
-    required this.date,
     required this.description,
-    required this.category,
+    required this.date,
+    required this.authorId,
+    required this.teamId,
+    this.category = 'Pribadi',
+    this.isPublic = false,
+    this.isSynced = false,
   });
+
+  Map<String, dynamic> toMap() => {
+    '_id': id != null ? ObjectId.fromHexString(id!) : ObjectId(),
+    'title': title,
+    'description': description,
+    'date': date,
+    'authorId': authorId,
+    'teamId': teamId,
+    'category': category,
+    'isPublic': isPublic,
+  };
 
   factory LogModel.fromMap(Map<String, dynamic> map) {
     return LogModel(
-      id: map['_id'] is ObjectId ? map['_id'] as ObjectId : null,
-      title: map['title'],
-      date: map['date'],
-      description: map['description'],
-      category: map['category'] ?? 'Lainnya',
+      id: (map['_id'] as ObjectId?)?.oid,
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      date: map['date'] ?? '',
+      authorId: map['authorId'] ?? 'unknown_user',
+      teamId: map['teamId'] ?? 'no_team',
+      category: map['category'] ?? 'Pribadi',
+      isPublic: map['isPublic'] ?? false,
+      isSynced: true, // Data dari Atlas sudah pasti tersync
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      if (id != null) '_id': id,
-      'title': title,
-      'date': date,
-      'description': description,
-      'category': category,
-    };
+  // Helper untuk copy dengan field tertentu diubah
+  LogModel copyWith({bool? isSynced}) {
+    return LogModel(
+      id: id,
+      title: title,
+      description: description,
+      date: date,
+      authorId: authorId,
+      teamId: teamId,
+      category: category,
+      isPublic: isPublic,
+      isSynced: isSynced ?? this.isSynced,
+    );
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is LogModel &&
-        other.id == id &&
-        other.title == title &&
-        other.date == date &&
-        other.description == description &&
-        other.category == category;
-  }
-
-  @override
-  int get hashCode => id.hashCode ^ title.hashCode ^ date.hashCode ^ description.hashCode ^ category.hashCode;
 }

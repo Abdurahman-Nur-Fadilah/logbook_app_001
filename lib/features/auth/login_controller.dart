@@ -1,32 +1,48 @@
 // login_controller.dart
 class LoginController {
-  final Map<String, String> _users = {
-    "admin": "123",
-    "user": "password",
-    "fadil": "gero",
-  };
+  // Data user lengkap dengan uid, role, dan teamId
+  static const List<Map<String, String>> _users = [
+    {
+      'username': 'admin',
+      'password': '123',
+      'uid': 'uid_001',
+      'role': 'Ketua',
+      'teamId': 'MEKTRA_KLP_01',
+    },
+    {
+      'username': 'user',
+      'password': 'password',
+      'uid': 'uid_002',
+      'role': 'Anggota',
+      'teamId': 'MEKTRA_KLP_01',
+    },
+    {
+      'username': 'fadil',
+      'password': 'gero',
+      'uid': 'uid_003',
+      'role': 'Anggota',
+      'teamId': 'MEKTRA_KLP_01',
+    },
+  ];
 
   int _failedAttempts = 0;
-
   int get failedAttempts => _failedAttempts;
 
-  // Fungsi pengecekan (Logic-Only)
-  // Fungsi ini mengembalikan true jika cocok, false jika salah.
-  bool login(String username, String password) {
-    if (_users.containsKey(username) && _users[username] == password) {
-      _failedAttempts = 0; // Reset counter jika login berhasil
-      return true;
+  /// Login dan return Map user jika berhasil, null jika gagal
+  Map<String, String>? login(String username, String password) {
+    final user = _users.where(
+      (u) => u['username'] == username && u['password'] == password,
+    ).firstOrNull;
+
+    if (user != null) {
+      _failedAttempts = 0;
+      return user;
     } else {
-      _failedAttempts++; // Tambah counter jika login gagal
-      return false;
+      _failedAttempts++;
+      return null;
     }
   }
 
-  void resetFailedAttempts() {
-    _failedAttempts = 0;
-  }
-
-  bool isLockedOut() {
-    return _failedAttempts >= 3;
-  }
+  void resetFailedAttempts() => _failedAttempts = 0;
+  bool isLockedOut() => _failedAttempts >= 3;
 }
